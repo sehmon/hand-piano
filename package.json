@@ -1,0 +1,46 @@
+{
+  "name": "p5.js-es6",
+  "version": "1.0.0",
+  "description": "Boilerplate for writing p5.js sketches in es6 with babel, webpack and sass.",
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "webpack serve --progress --color",
+    "prebuild": "npm install",
+    "build": "npm run clean && webpack --progress --color --mode=production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mkontogiannis/p5.js-es6.git"
+  },
+  "author": "Michael Kontogiannis <mkontogiannis@protonmail.com> (https://m.kontogiannis.org/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mkontogiannis/p5.js-es6/issues"
+  },
+  "homepage": "https://github.com/mkontogiannis/p5.js-es6#README",
+  "dependencies": {
+    "@mediapipe/hands": "^0.4.1675469240",
+    "@mediapipe/tasks-vision": "^0.1.0-alpha-8",
+    "p5": "1.4.1",
+    "tone": "^14.7.77"
+  },
+  "devDependencies": {
+    "@babel/core": "7.17.5",
+    "@babel/preset-env": "7.16.11",
+    "@types/p5": "1.4.0",
+    "babel-loader": "8.2.3",
+    "copy-webpack-plugin": "10.2.4",
+    "css-loader": "6.6.0",
+    "node-sass": "7.0.1",
+    "prettier": "2.5.1",
+    "rimraf": "3.0.2",
+    "sass-loader": "12.6.0",
+    "style-loader": "3.3.1",
+    "ts-loader": "9.2.6",
+    "typescript": "4.5.5",
+    "webpack": "5.69.1",
+    "webpack-cli": "4.9.2",
+    "webpack-dev-server": "4.7.4",
+    "worker-loader": "^3.0.8"
+  }
+}
