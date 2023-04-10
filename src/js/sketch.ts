@@ -49,7 +49,7 @@ class ExpandingCircle {
   }
 
   increaseRadius() {
-    this.r += 10;
+    this.r += 20;
   }
 
   update() {
@@ -124,7 +124,6 @@ const sketch = (p: p5) => {
           if (handLandmarkerResult.landmarks[0][fingerValues[i][0]].y > handLandmarkerResult.landmarks[0][fingerValues[i][1]].y) {
             if (!fingerStates[i]) {
               console.log("Finger down");
-              circleArray.push(new ExpandingCircle(p, p.random(p.width), p.random(p.height), 10, p.color(0, 128)));
               // synthArray[i].triggerAttackRelease(tones[i], "8n");
               fingerStates[i] = true;
 
@@ -134,8 +133,9 @@ const sketch = (p: p5) => {
                 5,
                 7,
               ]
-
               const note = genie.next(noteMap[i], TEMPERATURE);
+              circleArray.push(new ExpandingCircle(p, p.map(note, 0, 100, 0, p.width), p.height/2, 10, p.color(0, 128)));
+              console.log("Width mapping: " + p.map(note, 0, 100, 0, p.width));
               synthArray[i].triggerAttackRelease(Tone.Frequency(note, "midi").toFrequency(), "8n");
               console.log(note);
             }
@@ -191,6 +191,8 @@ const sketch = (p: p5) => {
   
   p.draw = () => {
     p.background(bg);
+    p.stroke(100);
+    p.line(0, p.height/2, p.width, p.height/2);
     if (handLandmarkerLoaded) {
       p.fill(255, 0, 0);
       p.text("HandLandmarker loaded", 10, 10);
