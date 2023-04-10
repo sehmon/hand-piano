@@ -57,7 +57,7 @@ class ExpandingCircle {
   update() {
     this.increaseRadius();
     this.p.noFill();
-    this.p.stroke(this.color);
+    this.p.stroke(0, this.p.max(255 - (this.r/2), 0));
     this.p.circle(this.x, this.y, this.r);
   }
 }
@@ -68,7 +68,7 @@ const sketch = (p: p5) => {
   let synth: Tone.Synth;
   let synthArray: Tone.Synth[] = [];
   let circleArray: ExpandingCircle[] = [];
-  let bg: p5.Color = p.color(0);
+  let bg: p5.Color = p.color(220);
 
   let fingerStates = [
     false,
@@ -113,10 +113,9 @@ const sketch = (p: p5) => {
             if (handLandmarkerResult.landmarks[0][fingerValues[i][0]].y > handLandmarkerResult.landmarks[0][fingerValues[i][1]].y) {
                 if (!fingerStates[i]) {
                     console.log("Finger down");
-                    circleArray.push(new ExpandingCircle(p, p.random(p.width), p.random(p.height), 10, p.color(p.random(255))));
+                    circleArray.push(new ExpandingCircle(p, p.random(p.width), p.random(p.height), 10, p.color(0, 128)));
                     synthArray[i].triggerAttackRelease(tones[i], "8n");
                     fingerStates[i] = true;
-                    bg = p.color(p.random(255))
                 }
             } else {
                 fingerStates[i] = false;
@@ -136,7 +135,7 @@ const sketch = (p: p5) => {
     synthArray = Array.from(Array(4), () => new Tone.Synth().toDestination());
 
     // Create a button element
-    const button = p.createButton("Click me");
+    const button = p.createButton("Start AudioContext");
     button.position(10, p.windowHeight - 30);
 
     // Add a click event listener to the button
@@ -152,7 +151,6 @@ const sketch = (p: p5) => {
   
   p.draw = () => {
     p.background(bg);
-    p.image(capture, 0, 0, 320, 240);
     if (handLandmarkerLoaded) {
       p.fill(255, 0, 0);
       p.text("HandLandmarker loaded", 10, 10);
