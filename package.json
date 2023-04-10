@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/mkontogiannis/p5.js-es6#README",
   "dependencies": {
+    "@magenta/music": "^1.23.1",
     "@mediapipe/hands": "^0.4.1675469240",
     "@mediapipe/tasks-vision": "^0.1.0-alpha-8",
     "@types/offscreencanvas": "^2019.7.0",

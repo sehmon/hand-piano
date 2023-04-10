@@ -2,14 +2,32 @@ import p5 from 'p5';
 import * as Tone from 'tone'
 import '../css/style.scss';
 import { FilesetResolver, HandLandmarker, ImageSource } from '@mediapipe/tasks-vision';
-
 import { WorkerPool } from './workerPool';
-const workerPool = new WorkerPool(8); // Create a worker pool with 8 workers
 
+import * as mm from '@magenta/music/es6';
+
+const GENIE_CHECKPOINT = 'https://storage.googleapis.com/magentadata/js/checkpoints/piano_genie/model/epiano/stp_iq_auto_contour_dt_166006'
+const genie = new mm.PianoGenie(GENIE_CHECKPOINT);
+
+const workerPool = new WorkerPool(8); // Create a worker pool with 8 workers
 
 let handLandmarkerLoaded = false;
 let vision;
 let handLandmarker: HandLandmarker;
+
+function parseHashParameters() {
+  const hash = window.location.hash.substring(1);
+  const params:any = {}
+  hash.split('&').map(hk => {
+    let temp: string[] = [];
+    temp = hk.split('=');
+    params[temp[0]] = temp[1]
+  });
+  return params;
+}
+
+const hash = parseFloat(parseHashParameters()['temperature']) || 0.25;
+const TEMPERATURE = Math.min(1, hash);
 
 // Expanding circle class
 class ExpandingCircle {
@@ -60,10 +78,10 @@ const sketch = (p: p5) => {
   ]
 
   const fingerValues = [
-      [20, 18],
-      [16, 14],
-      [12, 10],
-      [8, 6],
+      [20, 17],
+      [16, 13],
+      [12, 9],
+      [8, 5],
   ]
 
   const tones = [
@@ -107,8 +125,19 @@ const sketch = (p: p5) => {
             if (!fingerStates[i]) {
               console.log("Finger down");
               circleArray.push(new ExpandingCircle(p, p.random(p.width), p.random(p.height), 10, p.color(0, 128)));
-              synthArray[i].triggerAttackRelease(tones[i], "8n");
+              // synthArray[i].triggerAttackRelease(tones[i], "8n");
               fingerStates[i] = true;
+
+              const noteMap = [
+                0,
+                2,
+                5,
+                7,
+              ]
+
+              const note = genie.next(noteMap[i], TEMPERATURE);
+              synthArray[i].triggerAttackRelease(Tone.Frequency(note, "midi").toFrequency(), "8n");
+              console.log(note);
             }
           } else {
             fingerStates[i] = false;
@@ -148,6 +177,13 @@ const sketch = (p: p5) => {
 	    console.log("context started");
       synth = new Tone.Synth().toDestination();
       synth.triggerAttackRelease("C4", "8n");
+    });
+
+    genie.initialize().then(() => {
+      console.log('🧞‍♀️ ready!');
+      // Slow to start, warm up the model
+      const note = genie.next(0, TEMPERATURE);
+      genie.resetState();
     });
   
     processHandsLoop(); // Start the processing loop
