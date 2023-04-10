@@ -3,33 +3,13 @@ import * as Tone from 'tone'
 import '../css/style.scss';
 import { FilesetResolver, HandLandmarker, ImageSource } from '@mediapipe/tasks-vision';
 
+import { WorkerPool } from './workerPool';
+const workerPool = new WorkerPool(8); // Create a worker pool with 8 workers
+
+
 let handLandmarkerLoaded = false;
 let vision;
 let handLandmarker: HandLandmarker;
-
-const mediapipeSetup = new Promise(async (resolve, reject) => {
-  try {
-    console.log("Starting FilesetResolver...")
-    vision = await FilesetResolver.forVisionTasks(
-      // path/to/wasm/root
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-    );
-    console.log("Initializing HandLandmarker...")
-    handLandmarker = await HandLandmarker.createFromOptions(
-      vision,
-      {
-        baseOptions: {
-          modelAssetPath: "assets/hand_landmarker.task"
-        },
-        numHands: 2
-    });
-    console.log("HandLandmarker initialized");
-    handLandmarkerLoaded = true;
-  }
-  catch (e) {
-    console.log(e);
-  }
-});
 
 // Expanding circle class
 class ExpandingCircle {
@@ -69,6 +49,8 @@ const sketch = (p: p5) => {
   let synthArray: Tone.Synth[] = [];
   let circleArray: ExpandingCircle[] = [];
   let bg: p5.Color = p.color(220);
+  let videoPlaying: Boolean = false;
+
 
   let fingerStates = [
     false,
@@ -92,44 +74,66 @@ const sketch = (p: p5) => {
   ]
 
   p.preload = () => {
-    console.log("Waiting for mediapipe setup...");
-    mediapipeSetup.then(() => {
-      console.log('mediapipe setup done');
-    });
   };
 
   let processTimeout;
+  let tempCanvas: HTMLCanvasElement;
+  let tempCtx: CanvasRenderingContext2D | null;
+
   const processHandsLoop = () => {
-    if (capture && handLandmarkerLoaded) {
-      processHands(capture.elt);
+    if (capture && videoPlaying) {
+      tempCtx?.drawImage(capture.elt, 0, 0, tempCanvas.width, tempCanvas.height);
+      const imageData = tempCtx?.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      // @ts-ignore
+      processHands(imageData);
     }
-    processTimeout = setTimeout(processHandsLoop, 70);
+    processTimeout = setTimeout(processHandsLoop, 50);
   };
 
-  const processHands = async (handImage: ImageSource) => {
-    const handLandmarkerResult = await handLandmarker.detect(handImage);
-    if (handLandmarkerResult.landmarks.length > 0) {
+  const processHands = async (imageData: ImageData) => {
+    workerPool.runTask(async (worker) => {
+      worker.postMessage({ imageData });
+      return new Promise((resolve) => {
+        worker.onmessage = (e) => {
+          const handLandmarkerResult = e.data;
+          resolve(handLandmarkerResult);
+        };
+      });
+    }).then((handLandmarkerResult: any) => {
+      // Move the code for processing the handLandmarkerResult here
+      if (handLandmarkerResult.landmarks.length > 0) {
         for (let i = 0; i < fingerStates.length; i++) {
-            if (handLandmarkerResult.landmarks[0][fingerValues[i][0]].y > handLandmarkerResult.landmarks[0][fingerValues[i][1]].y) {
-                if (!fingerStates[i]) {
-                    console.log("Finger down");
-                    circleArray.push(new ExpandingCircle(p, p.random(p.width), p.random(p.height), 10, p.color(0, 128)));
-                    synthArray[i].triggerAttackRelease(tones[i], "8n");
-                    fingerStates[i] = true;
-                }
-            } else {
-                fingerStates[i] = false;
+          if (handLandmarkerResult.landmarks[0][fingerValues[i][0]].y > handLandmarkerResult.landmarks[0][fingerValues[i][1]].y) {
+            if (!fingerStates[i]) {
+              console.log("Finger down");
+              circleArray.push(new ExpandingCircle(p, p.random(p.width), p.random(p.height), 10, p.color(0, 128)));
+              synthArray[i].triggerAttackRelease(tones[i], "8n");
+              fingerStates[i] = true;
             }
+          } else {
+            fingerStates[i] = false;
+          }
         }
-    }
+      }
+    }).finally(() => {
+      workerPool.processNextTask();
+    });
   };
 
   p.setup = () => {
     console.log("Creating Canvas...");
     p.createCanvas(p.windowWidth, p.windowHeight);
-    capture = p.createCapture(p.VIDEO);
+    capture = p.createCapture(p.VIDEO, () => {
+      console.log("Video capture started");
+      videoPlaying = true;
+    });
     capture.size(320, 240);
     capture.hide();
+
+    tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 320;
+    tempCanvas.height = 240;
+    tempCtx = tempCanvas.getContext('2d');
 
     // set synthArray to an array with 4 synths
     synthArray = Array.from(Array(4), () => new Tone.Synth().toDestination());
@@ -155,6 +159,7 @@ const sketch = (p: p5) => {
       p.fill(255, 0, 0);
       p.text("HandLandmarker loaded", 10, 10);
     }
+    p.image(capture, 0, 0, 320, 240);
     let fps = p.frameRate();
     p.fill(255);
     p.stroke(255);

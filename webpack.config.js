@@ -9,6 +9,7 @@ module.exports = {
     path: __dirname + '/dist/',
     publicPath: '/',
     filename: 'js/sketch.js',
+    globalObject: 'self', // this is important for worker compatibility
   },
   devServer: {
     client: {
@@ -18,6 +19,9 @@ module.exports = {
     compress: true,
     open: true,
     port: 3333,
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
   },
   module: {
     rules: [
@@ -50,10 +54,20 @@ module.exports = {
           'sass-loader',
         ],
       },
-      {
-        test: /\.worker\.js$/,
-        use: { loader: 'worker-loader' },
-      },
+      // {
+      //   test: /\.worker\.ts$/,
+      //   use: [
+      //     {
+      //       loader: 'worker-loader',
+      //       options: {
+      //         filename: 'js/[name].worker.js',
+      //         inline: 'fallback',
+      //       },
+      //     },
+      //     'ts-loader',
+      //   ],
+      //   exclude: /node_modules/,
+      // },      
     ],
   },
   plugins: [
