@@ -50,4 +50,8 @@ export class WorkerPool {
       if (task) task();
     }
   }
+
+  activeTaskCount() {
+    return this.activeTasks.reduce((a, b) => a + b, 0);
+  }
 }

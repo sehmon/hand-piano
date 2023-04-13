@@ -66,7 +66,7 @@ const sketch = (p: p5) => {
   let synth: Tone.Synth;
   let synthArray: Tone.Synth[] = [];
   let circleArray: ExpandingCircle[] = [];
-  let bg: p5.Color = p.color(220);
+  let bg: p5.Color = p.color(245);
   let videoPlaying: Boolean = false;
 
 
@@ -91,12 +91,20 @@ const sketch = (p: p5) => {
       "C5",
   ]
 
+  const noteMap = [
+    3,
+    4,
+    6,
+    8,
+  ]
+
   p.preload = () => {
   };
 
   let processTimeout;
   let tempCanvas: HTMLCanvasElement;
   let tempCtx: CanvasRenderingContext2D | null;
+  let playGenieNotes = true;
 
   const processHandsLoop = () => {
     if (capture && videoPlaying) {
@@ -105,7 +113,7 @@ const sketch = (p: p5) => {
       // @ts-ignore
       processHands(imageData);
     }
-    processTimeout = setTimeout(processHandsLoop, 50);
+    processTimeout = setTimeout(processHandsLoop, 70);
   };
 
   const processHands = async (imageData: ImageData) => {
@@ -124,20 +132,15 @@ const sketch = (p: p5) => {
           if (handLandmarkerResult.landmarks[0][fingerValues[i][0]].y > handLandmarkerResult.landmarks[0][fingerValues[i][1]].y) {
             if (!fingerStates[i]) {
               console.log("Finger down");
-              // synthArray[i].triggerAttackRelease(tones[i], "8n");
               fingerStates[i] = true;
-
-              const noteMap = [
-                0,
-                2,
-                5,
-                7,
-              ]
               const note = genie.next(noteMap[i], TEMPERATURE);
               circleArray.push(new ExpandingCircle(p, p.map(note, 0, 100, 0, p.width), p.height/2, 10, p.color(0, 128)));
-              console.log("Width mapping: " + p.map(note, 0, 100, 0, p.width));
-              synthArray[i].triggerAttackRelease(Tone.Frequency(note, "midi").toFrequency(), "8n");
-              console.log(note);
+              if(playGenieNotes) {
+                synthArray[i].triggerAttackRelease(Tone.Frequency(note, "midi").toFrequency(), "8n");
+              } else {
+                synthArray[i].triggerAttackRelease(tones[i], "8n");
+              }
+              
             }
           } else {
             fingerStates[i] = false;
@@ -205,12 +208,12 @@ const sketch = (p: p5) => {
 
     circleArray.forEach((circle, index, object) => {
       if (circle.radius() > p.height) {
-        console.log("Removing circle");
         object.splice(index, 1);
         return;
       }
       circle.update();
     });
+    // console.log(workerPool.activeTaskCount());
   };
 
   p.windowResized = () => {
