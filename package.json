@@ -23,6 +23,7 @@
     "@mediapipe/hands": "^0.4.1675469240",
     "@mediapipe/tasks-vision": "^0.1.0-alpha-8",
     "@types/offscreencanvas": "^2019.7.0",
+    "nice-color-palettes": "^3.0.0",
     "p5": "1.4.1",
     "tone": "^14.7.77"
   },

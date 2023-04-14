@@ -1,6 +1,4 @@
-console.log("Mediapipe Worker initialized");
-
-import { FilesetResolver, HandLandmarker, ImageSource } from '@mediapipe/tasks-vision';
+import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
 let handLandmarkerLoaded = false;
 let vision;
@@ -19,7 +17,7 @@ const mediapipeSetup = async () => {
         baseOptions: {
           modelAssetPath: "/assets/hand_landmarker.task"
         },
-        numHands: 1
+        numHands: 2
     });
     console.log("HandLandmarker initialized");
     handLandmarkerLoaded = true;
@@ -30,33 +28,6 @@ const mediapipeSetup = async () => {
 };
 
 mediapipeSetup();
-
-const processHands = async (handImage: ImageSource) => {
-  const handLandmarkerResult = await handLandmarker.detect(handImage);
-  // Return results instead of handling them in this function
-  return handLandmarkerResult;
-};
-
-// self.addEventListener('message', async (event) => {
-//   // Receive the ImageBitmap object from the main thread
-//   console.log("Received message from main thread");
-//   const handImage: ImageBitmap = event.data.handImage;
-//   if (handLandmarkerLoaded) {
-//     const handLandmarkerResult = await processHands(event.data);
-//     // Send the results back to the main thread
-//     self.postMessage(handLandmarkerResult);
-//   }
-// });  
-
-// self.onmessage = async (e) => {
-//   console.log("Received message from main thread");
-//   if (handLandmarkerLoaded) {
-//     const handLandmarkerResult = await processHands(e.data);
-//     // Send the results back to the main thread
-//     self.postMessage(handLandmarkerResult);
-//   }
-// };  
-
 
 self.onmessage = async (e: MessageEvent) => {
   const { imageData } = e.data;
