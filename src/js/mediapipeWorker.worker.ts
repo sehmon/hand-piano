@@ -29,34 +29,35 @@ const mediapipeSetup = async () => {
 
 mediapipeSetup();
 
-// self.onmessage = async (e: MessageEvent) => {
-//   const { imageData } = e.data;
-
-//   // Create an OffscreenCanvas and draw the image data onto it
-//   const offscreenCanvas = new OffscreenCanvas(imageData.width, imageData.height);
-//   const offscreenCtx = offscreenCanvas.getContext('2d');
-//   offscreenCtx?.putImageData(imageData, 0, 0);
-
-//   // Create an ImageBitmap from the OffscreenCanvas
-//   const bitmap = offscreenCanvas.transferToImageBitmap();
-
-//   try {
-//     const handLandmarkerResult = await handLandmarker.detect(bitmap);
-//     // Send the result back to the main thread
-//     self.postMessage(handLandmarkerResult);
-//   } catch (error) {
-//     console.error("Error processing hands:", error);
-//   }
-// };
-
 // Utility function to determine if OffscreenCanvas is supported
 function isOffscreenCanvasSupported() {
   return typeof OffscreenCanvas !== 'undefined';
 }
 
-self.onmessage = async (e: MessageEvent) => {
+// Utility function to create an ImageBitmap from ImageData
+async function createImageBitmapFromImageData(imageData: ImageData) {
+  return new Promise<ImageBitmap>((resolve, reject) => {
+    const tempCanvas = new OffscreenCanvas(imageData.width, imageData.height);
+    const tempCtx = tempCanvas.getContext('2d');
 
-  if(!handLandmarkerLoaded) {
+    if (tempCtx) {
+      tempCtx.putImageData(imageData, 0, 0);
+      tempCanvas.convertToBlob().then(async (blob) => {
+        if (blob) {
+          const imageBitmap = await createImageBitmap(blob);
+          resolve(imageBitmap);
+        } else {
+          reject(new Error('Failed to create ImageBitmap from ImageData.'));
+        }
+      });
+    } else {
+      reject(new Error('Failed to get 2d context from temporary canvas.'));
+    }
+  });
+}
+
+self.onmessage = async (e: MessageEvent) => {
+  if (!handLandmarkerLoaded) {
     return;
   }
 
@@ -73,7 +74,7 @@ self.onmessage = async (e: MessageEvent) => {
   } else {
     // Create an ImageBitmap for Safari
     console.log("In Safari");
-    bitmap = await createImageBitmap(imageData);
+    bitmap = await createImageBitmapFromImageData(imageData);
   }
 
   try {
