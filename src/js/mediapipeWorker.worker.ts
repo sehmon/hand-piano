@@ -29,16 +29,52 @@ const mediapipeSetup = async () => {
 
 mediapipeSetup();
 
+// self.onmessage = async (e: MessageEvent) => {
+//   const { imageData } = e.data;
+
+//   // Create an OffscreenCanvas and draw the image data onto it
+//   const offscreenCanvas = new OffscreenCanvas(imageData.width, imageData.height);
+//   const offscreenCtx = offscreenCanvas.getContext('2d');
+//   offscreenCtx?.putImageData(imageData, 0, 0);
+
+//   // Create an ImageBitmap from the OffscreenCanvas
+//   const bitmap = offscreenCanvas.transferToImageBitmap();
+
+//   try {
+//     const handLandmarkerResult = await handLandmarker.detect(bitmap);
+//     // Send the result back to the main thread
+//     self.postMessage(handLandmarkerResult);
+//   } catch (error) {
+//     console.error("Error processing hands:", error);
+//   }
+// };
+
+// Utility function to determine if OffscreenCanvas is supported
+function isOffscreenCanvasSupported() {
+  return typeof OffscreenCanvas !== 'undefined';
+}
+
 self.onmessage = async (e: MessageEvent) => {
+
+  if(!handLandmarkerLoaded) {
+    return;
+  }
+
   const { imageData } = e.data;
 
-  // Create an OffscreenCanvas and draw the image data onto it
-  const offscreenCanvas = new OffscreenCanvas(imageData.width, imageData.height);
-  const offscreenCtx = offscreenCanvas.getContext('2d');
-  offscreenCtx?.putImageData(imageData, 0, 0);
+  let bitmap: ImageBitmap;
 
-  // Create an ImageBitmap from the OffscreenCanvas
-  const bitmap = offscreenCanvas.transferToImageBitmap();
+  if (isOffscreenCanvasSupported()) {
+    // Offscreen Canvas in Chrome
+    const offscreenCanvas = new OffscreenCanvas(imageData.width, imageData.height);
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+    offscreenCtx?.putImageData(imageData, 0, 0);
+    bitmap = offscreenCanvas.transferToImageBitmap();
+  } else {
+    // Create an ImageBitmap for Safari
+    console.log("In Safari");
+    bitmap = await createImageBitmap(imageData);
+  }
 
   try {
     const handLandmarkerResult = await handLandmarker.detect(bitmap);
