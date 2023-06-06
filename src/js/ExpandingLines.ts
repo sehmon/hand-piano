@@ -1,40 +1,47 @@
 import p5 from 'p5';
 
 // Expanding circle class
-export class ExpandingCircle {
+export class ExpandingLines {
   constructor(
     private p: p5,
     private x: number,
     private y: number,
-    private r: number,
+    private width: number,
     private maxR: number,
     private hexColor: string,
+    private life: number,
   ) {
     this.x = x;
     this.y = y;
-    this.r = r;
+    this.width = width;
     this.maxR = maxR;
     this.hexColor = hexColor;
+    this.life = life;
   }
 
-  radius() {
-    return this.r;
+  getWidth() {
+    return this.width;
   }
 
   maxRadius() {
     return this.maxR;
   }
 
-  increaseRadius() {
-    this.r += Math.min(20, 12+(this.r/30));
+  decreaseLife() {
+    this.life -= 2;
+  }
+
+  getLife() {
+    return this.life;
   }
 
   update() {
-    this.increaseRadius();
+    this.decreaseLife();
     let c = this.p.color(this.hexColor);
-    c.setAlpha(Math.max(0, 0.5*(this.maxR - this.r) / this.maxR) * 255);
+    c.setAlpha((this.life/200)*255);
     this.p.fill(c);
     this.p.noStroke();
-    this.p.circle(this.x, this.y, this.r);
+    this.p.rectMode(this.p.CENTER);
+    this.p.rect(this.x, this.y, this.width, this.p.windowHeight);
   }
 }

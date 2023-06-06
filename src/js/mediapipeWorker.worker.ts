@@ -6,11 +6,11 @@ let handLandmarker: HandLandmarker;
 
 const mediapipeSetup = async () => {
   try {
-    console.log("Starting FilesetResolver...")
+    // console.log("Starting FilesetResolver...")
     vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.1.0-alpha-13/wasm"
     );
-    console.log("Initializing HandLandmarker...")
+    // console.log("Initializing HandLandmarker...")
     handLandmarker = await HandLandmarker.createFromOptions(
       vision,
       {
@@ -19,7 +19,7 @@ const mediapipeSetup = async () => {
         },
         numHands: 2
     });
-    console.log("HandLandmarker initialized");
+    // console.log("HandLandmarker initialized");
     handLandmarkerLoaded = true;
   }
   catch (e) {

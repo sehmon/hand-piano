@@ -36,7 +36,8 @@ export class WorkerPool {
             this.activeTasks[workerIndex]--;
           }
         } else {
-          this.taskQueue.push(processTask);
+          // this.taskQueue.push(processTask);
+          console.log("Task full, skipping queue");
         }
       };
 
