@@ -1,55 +1,42 @@
+// Library Imports
 import p5 from 'p5';
 import * as Tone from 'tone'
 import * as mm from '@magenta/music/es6';
 
 import { WorkerPool } from './workerPool';
 import { Constants } from './constants';
+
+// Import visual rendering styles
 import { ExpandingCircle } from './ExpandingCircle';
 import { ExpandingLines } from './ExpandingLines';
 import { Car } from './Car';
 
 import '../css/style.scss';
 
-const genie = new mm.PianoGenie(Constants.GENIE_CHECKPOINT);
+// Define global constants
 const workerPool = new WorkerPool(12); // Create a worker pool with 10 workers
 let detected_hands = 0;
-
-const KEY_LIST = Array(64).fill(8).map((_, i) => i+8); // Add numbers 8-80 to an array
-const TEMPERATURE = 0.25;
-console.log("Temperature: " + TEMPERATURE);
-
 let startScreen = true;
 
-let VISUAL_MODE = 'cars'; // 'circles' or 'lines' or 'cars'
-let NOTES = [
-  "2n",
-  "4n",
-  "4n",
-  "8n",
-  "8n",
-]
+// Intialize Piano Genie
+const genie = new mm.PianoGenie(Constants.GENIE_CHECKPOINT);
+const KEY_LIST = Array(64).fill(8).map((_, i) => i+8); // Add numbers 8-80 to an array
+const TEMPERATURE = 0.25;
 
-let widthMap: { [duration: string] : number } = {
-  "1n": 400,
-  "2n": 200,
-  "4n": 100,
-  "8n": 50,
-}
+// Sketch config variables
+let playGenieNotes = true;
+let handProcessingRate = 70; // in ms
 
-let speedMap: { [duration: string] : number } = {
-  "1n": 4,
-  "2n": 8,
-  "4n": 16,
-  "8n": 32,
-}
-
+// Define Sketch class
 const sketch = (p: p5) => {
   let capture: p5.Element;
   let synth: Tone.Synth;
-  let synthArray: Tone.Synth[] = [];
+
+  // Visual effect arrays
   let circleArray: ExpandingCircle[] = [];
   let lineArray: ExpandingLines[] = [];
   let carArray: Car[] = [];
+
   let bg = 0;
   let videoPlaying: Boolean = false;
 
@@ -72,7 +59,6 @@ const sketch = (p: p5) => {
   let processTimeout;
   let tempCanvas: HTMLCanvasElement;
   let tempCtx: CanvasRenderingContext2D | null;
-  let playGenieNotes = true;
 
   const processHandsLoop = () => {
     if (capture && videoPlaying && !startScreen) {
@@ -81,7 +67,7 @@ const sketch = (p: p5) => {
       // @ts-ignore
       processHands(imageData);
     }
-    processTimeout = setTimeout(processHandsLoop, 70);
+    processTimeout = setTimeout(processHandsLoop, handProcessingRate);
   };
 
   const processHands = async (imageData: ImageData) => {
@@ -116,30 +102,36 @@ const sketch = (p: p5) => {
     }
     const synthArrayToUse = handIndex === 0 ? leftSynthArray : rightSynthArray;
   
+    // Check if finger is above or below the middle line
+    // If dips below, trigger a note
     for (let i = 0; i < fingerStates.length; i++) {
       if (landmarks[fingerValues[i][0]].y > landmarks[fingerValues[i][1]].y) {
         if (!fingerStates[i]) {
           fingerStates[i] = true;
           const note = genie.nextFromKeyList(noteMapToUse[i], KEY_LIST, TEMPERATURE);
-          // Set variable circleHex to a random color from the BLUE_COLOR_PALETTE array
-          let note_duration = NOTES[Math.floor(Math.random() * NOTES.length)];
-          if(VISUAL_MODE === 'circles') {
-            const circleHex = Constants.BLUE_COLOR_PALETTE[Math.floor(Math.random() * Constants.BLUE_COLOR_PALETTE.length)];
-            circleArray.push(new ExpandingCircle(p, p.map(note, 0, 100, 0, p.width), p.height / 2, 10, p.windowWidth, circleHex));
-            // Flash background, if above 255 reset to 255
-            bg += 30;
-            if (bg > 140) { bg = 140; }
+          let note_duration = Constants.NOTES[Math.floor(Math.random() * Constants.NOTES.length)];
+
+          // Render visual effects based on mode
+          switch(Constants.VISUAL_MODE) {
+            case 'circles':
+              const circleHex = Constants.BLUE_COLOR_PALETTE[Math.floor(Math.random() * Constants.BLUE_COLOR_PALETTE.length)];
+              circleArray.push(new ExpandingCircle(p, p.map(note, 0, 100, 0, p.width), p.height / 2, 10, p.windowWidth, circleHex));
+              // Flash background, if above 255 reset to 255
+              bg += 30;
+              if (bg > 140) { bg = 140; } // Cap background color at 140
+              break;
+            case 'lines':
+              const lineHex = Constants.PINK_COLOR_PALETTE[Math.floor(Math.random() * Constants.PINK_COLOR_PALETTE.length)];
+              lineArray.push(new ExpandingLines(p, p.map(note, 0, 100, 0, p.width), p.height / 2, Constants.WIDTH_MAP[note_duration], p.windowWidth, lineHex, 200));
+              break;
+            case 'cars':
+              const carHex = Constants.PINK_COLOR_PALETTE[Math.floor(Math.random() * Constants.PINK_COLOR_PALETTE.length)];
+              carArray.push(new Car(p, 0, p.height/2 + ((Math.random()*2)-1)*(Math.random()*40), Constants.WIDTH_MAP[note_duration], carHex, Constants.SPEED_MAP[note_duration]));
+              break;
+            default:
+              break;
           }
-          else if(VISUAL_MODE === 'lines') {
-            const lineHex = Constants.PINK_COLOR_PALETTE[Math.floor(Math.random() * Constants.PINK_COLOR_PALETTE.length)];
-            lineArray.push(new ExpandingLines(p, p.map(note, 0, 100, 0, p.width), p.height / 2, widthMap[note_duration], p.windowWidth, lineHex, 200));
-          }
-          else if(VISUAL_MODE === 'cars') {
-            console.log("Drawing car");
-            const carHex = Constants.PINK_COLOR_PALETTE[Math.floor(Math.random() * Constants.PINK_COLOR_PALETTE.length)];
-            carArray.push(new Car(p, 0, p.height/2 + ((Math.random()*2)-1)*(Math.random()*40), widthMap[note_duration], carHex, speedMap[note_duration]));
-            console.log(carArray);
-          }
+
           if (playGenieNotes) {
             synthArrayToUse[i].triggerAttackRelease(Tone.Frequency(note, "midi").toFrequency(), note_duration);
 
@@ -211,9 +203,6 @@ const sketch = (p: p5) => {
     tempCanvas.height = 240;
     tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
 
-    // set synthArray to an array with 4 synths
-    synthArray = Array.from(Array(4), () => new Tone.Synth().toDestination());
-
     genie.initialize().then(() => {
       console.log('🧞‍♀️ ready!');
       // Slow to start, warm up the model
@@ -252,30 +241,38 @@ const sketch = (p: p5) => {
       p.background(0);
       drawUI();
 
-      circleArray.forEach((circle, index, object) => {
-        if (circle.radius() > circle.maxRadius()) {
-          object.splice(index, 1);
-          return;
-        }
-        circle.update();
-      });
-
-      lineArray.forEach((line, index, object) => {
-        if (line.getLife() <= 0) {
-          object.splice(index, 1);
-          return;
-        }
-        line.update();
-      });
-
-      carArray.forEach((car, index, object) => {
-        if(car.getX() > p.width) {
-          console.log('Removing Car');
-          object.splice(index, 1);
-          return;
-        } 
-        car.update();
-      });
+      switch(Constants.VISUAL_MODE) {
+        case 'circles':
+          circleArray.forEach((circle, index, object) => {
+            if (circle.radius() > circle.maxRadius()) {
+              object.splice(index, 1);
+              return;
+            }
+            circle.update();
+          });
+          break;
+        case 'lines':
+          lineArray.forEach((line, index, object) => {
+            if (line.getLife() <= 0) {
+              object.splice(index, 1);
+              return;
+            }
+            line.update();
+          });
+          break;
+        case 'cars':
+          carArray.forEach((car, index, object) => {
+            if(car.getX() > p.width) {
+              console.log('Removing Car');
+              object.splice(index, 1);
+              return;
+            } 
+            car.update();
+          });
+          break;
+        default:
+          break;
+      }
     }
   };
 };

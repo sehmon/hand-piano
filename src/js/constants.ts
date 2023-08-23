@@ -9,4 +9,8 @@ export abstract class Constants {
   static readonly BLUE_COLOR_PALETTE = ["#B9EDDD", "#87CBB9", "#569DAA", "#577D86"]
   static readonly PINK_COLOR_PALETTE = ["#FFF3E2", "#FFE5CA", "#FA9884", "#E74646"]
   static readonly ORANGE_COLOR_PALETTE = ["#E0D8B0", "#FCFFE7", "#DEA057", "#CE9461"]
+  static readonly WIDTH_MAP: { [duration: string] : number } = {"1n": 400, "2n": 200, "4n": 100, "8n": 50}
+  static readonly SPEED_MAP: { [duration: string] : number } = {"1n": 4, "2n": 8, "4n": 16, "8n": 32}
+  static readonly NOTES = ["2n", "4n", "4n", "8n", "8n"]
+  static VISUAL_MODE = 'cars' // 'circles' or 'lines' or 'cars'
 }
